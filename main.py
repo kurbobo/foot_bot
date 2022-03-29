@@ -6,7 +6,6 @@ conn = sqlite3.connect('db.db', check_same_thread=False)
 cursor = conn.cursor()
 with open('token.txt', 'r') as f:
     _token = f.readline()
-    print(_token)
 bot = telebot.TeleBot(_token)
 
 
