@@ -231,14 +231,23 @@ def handle_text(message):
     if re.fullmatch(pattern, message.text):
         global day_of_week
         us_name = message.from_user.username
+        from datetime import datetime
         start_time = re.findall('\d\d:\d\d', message.text)[0]
         last_time = re.findall('\d\d:\d\d', message.text)[-1]
-        if day_of_week is not None:
-            insert_new_time(conn, us_name, start_time, last_time, day_of_week)
-            bot.send_message(message.chat.id, f'Сохранили: в {day_of_week_dict[day_of_week]} ты можешь в с {start_time} до {last_time}')
-        else:
+        import time
+        try:
+            time.strptime(start_time, '%H:%M')
+            time.strptime(last_time, '%H:%M')
+        except ValueError:
             bot.send_message(message.chat.id,
-                             f'Сначала выбери день недели, а потом уже пиши временной промежуток')
+                             f'Некорректный формат времени, попробуй еще раз.')
+        else:
+            if day_of_week is not None:
+                insert_new_time(conn, us_name, start_time, last_time, day_of_week)
+                bot.send_message(message.chat.id, f'Сохранили: в {day_of_week_dict[day_of_week]} ты можешь в с {start_time} до {last_time}')
+            else:
+                bot.send_message(message.chat.id,
+                                 f'Сначала выбери день недели, а потом уже пиши временной промежуток')
     else:
         bot.send_message(message.chat.id, 'не могу прочитать, напиши еще раз:(')
 # Запускаем бота
