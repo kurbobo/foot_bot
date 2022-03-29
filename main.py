@@ -24,9 +24,16 @@ def select_times(conn, day_of_week, user_name=None, current=False):
     """
 
     cursor = conn.cursor()
-    cursor.execute(f'SELECT * FROM time_table where user_name="{user_name}" and day_of_week="{day_of_week}"')
-
+    if user_name is not None:
+        if current:
+            cursor.execute(f'SELECT * FROM time_table where user_name="{user_name}" and' +
+                           f' day_of_week="{day_of_week}" and current=TRUE')
+        else:
+            cursor.execute(f'SELECT * FROM time_table where user_name="{user_name}" and day_of_week="{day_of_week}"')
+    else:
+        cursor.execute(f'SELECT * FROM time_table where day_of_week="{day_of_week}" and current=TRUE')
     rows = cursor.fetchall()
+
     if len(rows)<=1:
         return rows
 # Функция, обрабатывающая команду /start
@@ -84,9 +91,25 @@ def iq_callback(query):
    data = query.data
    if data.startswith('add-'):
        add_possibility(query)
+   if data=='return_default_time':
+       return_default_time(query)
+
 def add_possibility(query):
    bot.answer_callback_query(query.id)
    send_added_result(query)
+
+def return_default_time(query):
+   bot.answer_callback_query(query.id)
+   update_current_state(query)
+
+def update_current_state(query):
+    user_name = query.message.chat.username
+    sql = f''' UPDATE time_table
+                  SET current = TRUE,
+                  WHERE user_name="{user_name}" and day_of_week="{day_of_week}"'''
+    cur = conn.cursor()
+    cur.execute(sql)
+    conn.commit()
 
 def send_added_result(query):
    message = query.message
@@ -99,10 +122,9 @@ def send_added_result(query):
        bot.send_message(
            message.chat.id, f'Выбирай время на {day_of_week_dict[day_of_week]}. \n' +
            'Формат - "10:44-13:30". \n' +
-                            f'Предыдущее время на этот день у тебя было {previous_time[1]}-{previous_time[2]},' +
-                            ' если устраивает, можешь не менять.',
-           # reply_markup=get_update_keyboard(),
-           # parse_mode='HTML'
+                            f'Предыдущее время на этот день у тебя было {previous_time[1]}-{previous_time[2]},',
+           reply_markup=get_update_keyboard(),
+           parse_mode='HTML'
        )
    else:
        bot.send_message(
@@ -114,7 +136,7 @@ def get_update_keyboard():
    keyboard = telebot.types.InlineKeyboardMarkup()
    keyboard.row(
        telebot.types.InlineKeyboardButton(
-           'Сохранить предыдущее время?',
+           'Сохранить предыдущее время.',
            callback_data='return_default_time'
        ),
    )
