@@ -56,26 +56,6 @@ def select_user_time_table(conn, user_name, current=True):
 
     return rows
 
-def confirm_user_time_table(conn, user_name):
-    """
-    Query all rows in the tasks table
-    :param conn: the Connection object
-    :return:
-    """
-    cursor = conn.cursor()
-    cursor.execute(f'UPDATE time_table SET confirmed = TRUE WHERE user_name="{user_name}" and current=TRUE')
-    conn.commit()
-
-def cancel_confirmation_user_time_table(conn, user_name):
-    """
-    Query all rows in the tasks table
-    :param conn: the Connection object
-    :return:
-    """
-    cursor = conn.cursor()
-    cursor.execute(f'UPDATE time_table SET confirmed = FALSE WHERE user_name="{user_name}"')
-    conn.commit()
-
 # Функция, обрабатывающая команду /start
 @bot.message_handler(commands=["start"])
 def start(m, res=False):
@@ -95,12 +75,8 @@ def help_command(message):
        message.chat.id,
        '1) Чтобы добавить новое время на определенный день недели, нажми /add.\n' +
        '2) Чтобы проверить нынешние времена на каждый день недели нажми /view.\n' +
-       '3) Чтобы подтверить изменения на ближайшую неделю, нажми /confirm. ' +
-       'Только подтвержденные дни будут учитываться в статистике. Понять, что время подтверждено можно по значку &#9745; в /view.\n' +
-       '4) Если случайно добавил лишний день, его можно удалить при помощи /delete.\n' +
-       '5) Чтобы посмотреть общую статистику, нажми /stat.\n' +
-       'Если сделать изменения в расписании после подтверждения, подтверждение автоматически отменится,\n' +
-       'так что нужно сделать подтверждение заново.',
+       '3) Если случайно добавил лишний день, его можно удалить при помощи /delete.\n' +
+       '4) Чтобы посмотреть общую статистику, нажми /stat.\n',
        # '5) если хочешь отменить подтверждение, нажми ',
        reply_markup=keyboard,
        parse_mode='HTML'
@@ -132,7 +108,6 @@ def add_command(message):
         reply_markup=keyboard,
         parse_mode='HTML'
     )
-    cancel_confirmation_user_time_table(conn, message.chat.username)
 
 @bot.message_handler(commands=['delete'])
 def add_command(message):
@@ -160,7 +135,6 @@ def add_command(message):
         reply_markup=keyboard,
         parse_mode='HTML'
     )
-    cancel_confirmation_user_time_table(conn, message.chat.username)
 
 @bot.callback_query_handler(func=lambda call: True)
 def iq_callback(query):
@@ -183,6 +157,10 @@ def return_default_time(query):
 def delete_day(query):
     bot.answer_callback_query(query.id)
     set_current_state_to_false(query)
+    day_of_week = str(query.data).split('-')[-1]
+    bot.send_message(
+        query.message.chat.id, f'Свободное время в {day_of_week_dict[day_of_week]} удалено.',
+    )
 
 def update_current_state(query):
     user_name = query.message.chat.username
@@ -214,7 +192,7 @@ def send_added_result(query):
        bot.send_message(
            message.chat.id, f'Выбирай время на {day_of_week_dict[day_of_week]}. \n' +
            'Формат - "10:44-13:30". \n' +
-                            f'Предыдущее время на этот день у тебя было {previous_time[1]}-{previous_time[2]},',
+                            f'Предыдущее время на этот день у тебя было {previous_time[1]}-{previous_time[2]}.',
            reply_markup=get_update_keyboard(),
            parse_mode='HTML'
        )
@@ -239,24 +217,12 @@ def view(message):
     time_table = select_user_time_table(conn, us_name)
     data_list = []
     for day_data in time_table:
-        _, start_time, end_time, day, confirmed, _ = day_data
-        if confirmed:
-            data_list.append(f'{day_of_week_dict[day]}: {start_time}-{end_time} &#9745;')
-        else:
-            data_list.append(f'{day_of_week_dict[day]}: {start_time}-{end_time}')
+        _, start_time, end_time, day, _ = day_data
+        data_list.append(f'{day_of_week_dict[day]}: {start_time}-{end_time} &#9745;')
     bot.send_message(
         message.chat.id,
-        'Расписание на следующую неделю:\n' + '\n'.join(data_list),
+        'Твое свободное время для футбольчика на следующую неделю:\n' + '\n'.join(data_list),
         parse_mode='HTML'
-    )
-
-@bot.message_handler(commands=['confirm'])
-def confirm(message):
-    us_name = message.chat.username
-    confirm_user_time_table(conn, us_name)
-    bot.send_message(
-        message.chat.id,
-        'расписание подтверждено!',
     )
 
 @bot.message_handler(content_types=["text"])
