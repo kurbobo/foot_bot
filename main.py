@@ -3,7 +3,6 @@ import re
 import sqlite3
 
 conn = sqlite3.connect('db.db', check_same_thread=False)
-cursor = conn.cursor()
 with open('token.txt', 'r') as f:
     _token = f.readline()
 bot = telebot.TeleBot(_token)
@@ -12,9 +11,24 @@ bot = telebot.TeleBot(_token)
 day_of_week_dict = {'monday': 'понедельник', 'tuesday':'вторник', 'wednesday': 'среду',
                     'thursday': 'четверг', 'friday': 'пятницу', 'saturday': 'субботу', 'sunday': 'воскресенье'}
 day_of_week = None
-def db_table_val(user_id: int, user_surname: str, start_time: str, last_time: str, day_of_week: str):
-    cursor.execute('INSERT OR REPLACE INTO time_table (user_id, user_surname, start_time, last_time, day_of_week) VALUES (?, ?, ?, ?, ?)', (user_id, user_surname, start_time, last_time, day_of_week))
+def db_table_val(conn, user_name: str, start_time: str, last_time: str, day_of_week):
+    cursor = conn.cursor()
+    cursor.execute('INSERT OR REPLACE INTO time_table (user_name, start_time, last_time, day_of_week) VALUES (?, ?, ?, ?)',
+                   (user_name, start_time, last_time, day_of_week))
     conn.commit()
+def select_previous_times(conn, user_name, day_of_week):
+    """
+    Query all rows in the tasks table
+    :param conn: the Connection object
+    :return:
+    """
+
+    cursor = conn.cursor()
+    cursor.execute(f'SELECT * FROM time_table where user_name="{user_name}" and day_of_week="{day_of_week}"')
+
+    rows = cursor.fetchall()
+    if len(rows)<=1:
+        return rows
 # Функция, обрабатывающая команду /start
 @bot.message_handler(commands=["start"])
 def start(m, res=False):
@@ -27,7 +41,7 @@ def help_command(message):
    keyboard = telebot.types.InlineKeyboardMarkup()
    keyboard.add(
        telebot.types.InlineKeyboardButton(
-           'Message the developer', url='telegram.me/kurbobo'
+           'Напишите разработчику', url='telegram.me/kurbobo'
        )
    )
    bot.send_message(
@@ -77,18 +91,29 @@ def send_added_result(query):
    message = query.message
    global day_of_week
    day_of_week = str(query.data).split('-')[-1]
-   bot.send_message(
-       message.chat.id, f'В какое время ты можешь играть в {day_of_week_dict[day_of_week]}? \n'+
-       'формат, например "10:44-13:30"',
-       reply_markup=get_update_keyboard(),
-       parse_mode='HTML'
-   )
+   us_name = message.chat.username
+   previous_times = select_previous_times(conn, us_name, day_of_week)
+   if len(previous_times)==1:
+       previous_time = previous_times[0]
+       bot.send_message(
+           message.chat.id, f'В какое время ты можешь играть в {day_of_week_dict[day_of_week]}? \n' +
+           'Формат - "10:44-13:30" \n' +
+                            f'Предыдущее время на этот день у тебя было {previous_time[1]}-{previous_time[2]} \
+                            , если устраивает, можешь не менять.',
+           # reply_markup=get_update_keyboard(),
+           # parse_mode='HTML'
+       )
+   else:
+       bot.send_message(
+           message.chat.id, f'В какое время ты можешь играть в {day_of_week_dict[day_of_week]}? \n' +
+                            'формат, например "10:44-13:30" \n',
+       )
 
 def get_update_keyboard():
    keyboard = telebot.types.InlineKeyboardMarkup()
    keyboard.row(
        telebot.types.InlineKeyboardButton(
-           'Предыдущее время было: ',
+           'Сохранить предыдущее время?',
            callback_data='return_default_time'
        ),
    )
@@ -99,12 +124,11 @@ def handle_text(message):
     pattern = '\d\d:\d\d-\d\d:\d\d'
     if re.fullmatch(pattern, message.text):
         global day_of_week
-        us_id = message.from_user.id
-        us_sname = message.from_user.username
+        us_name = message.from_user.username
         start_time = re.findall('\d\d:\d\d', message.text)[0]
         last_time = re.findall('\d\d:\d\d', message.text)[-1]
         if day_of_week is not None:
-            db_table_val(us_id, us_sname, start_time, last_time, day_of_week)
+            db_table_val(conn, us_name, start_time, last_time, day_of_week)
             bot.send_message(message.chat.id, f'Сохранили: в {day_of_week_dict[day_of_week]} ты можешь в с {start_time} до {last_time}')
         else:
             bot.send_message(message.chat.id,
