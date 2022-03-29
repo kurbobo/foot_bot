@@ -56,6 +56,23 @@ def select_user_time_table(conn, user_name, current=True):
 
     return rows
 
+def get_statistics(conn):
+    """
+    Query all rows in the tasks table
+    :param conn: the Connection object
+    :return:
+    """
+
+    cursor = conn.cursor()
+    cursor.execute('''SELECT day_of_week, SUM(current) 
+                    FROM time_table where current=TRUE
+                    GROUP BY day_of_week
+                    ORDER BY 2 DESC;'''
+                   )
+    rows = cursor.fetchall()
+
+    return rows
+
 # Функция, обрабатывающая команду /start
 @bot.message_handler(commands=["start"])
 def start(m, res=False):
@@ -227,6 +244,20 @@ def view(message):
         message.chat.id,
         'Твое свободное время для футбольчика на следующую неделю:\n' + '\n'.join(data_list),
         parse_mode='HTML'
+    )
+
+@bot.message_handler(commands=['stat'])
+def view(message):
+    us_name = message.chat.username
+    statistics = get_statistics(conn)
+    statistics = [(stat[0][:3].strip(), stat[1]) for stat in statistics]
+    from tabulate import tabulate
+    from pandas import DataFrame
+    statistics_df = DataFrame(statistics, columns=['day', 'count'])
+    bot.send_message(
+        message.chat.id,
+        'Статистика следующая:\n'+tabulate(statistics_df, headers = 'keys', tablefmt = 'github'),
+        parse_mode='Markdown'
     )
 
 @bot.message_handler(content_types=["text"])
