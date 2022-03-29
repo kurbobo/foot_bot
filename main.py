@@ -31,11 +31,31 @@ def select_times(conn, day_of_week, user_name=None, current=False):
         else:
             cursor.execute(f'SELECT * FROM time_table where user_name="{user_name}" and day_of_week="{day_of_week}"')
     else:
-        cursor.execute(f'SELECT * FROM time_table where day_of_week="{day_of_week}" and current=TRUE')
+        if current:
+            cursor.execute(f'SELECT * FROM time_table where day_of_week="{day_of_week}" and current=TRUE')
+        else:
+            cursor.execute(f'SELECT * FROM time_table where day_of_week="{day_of_week}"')
     rows = cursor.fetchall()
 
     if len(rows)<=1:
         return rows
+
+def select_user_time_table(conn, user_name, current=True):
+    """
+    Query all rows in the tasks table
+    :param conn: the Connection object
+    :return:
+    """
+
+    cursor = conn.cursor()
+    print(user_name)
+    if current:
+        cursor.execute(f'SELECT * FROM time_table where user_name="{user_name}" and current=TRUE')
+    else:
+        cursor.execute(f'SELECT * FROM time_table where user_name="{user_name}"')
+    rows = cursor.fetchall()
+
+    return rows
 # Функция, обрабатывающая команду /start
 @bot.message_handler(commands=["start"])
 def start(m, res=False):
@@ -54,7 +74,7 @@ def help_command(message):
    bot.send_message(
        message.chat.id,
        '1) Чтобы добавить новое время на определенный день недели, нажми /add.\n' +
-       '2) Чтобы проверить нынешние времена на каждый день недели нажми /check.\n' +
+       '2) Чтобы проверить нынешние времена на каждый день недели нажми /view.\n' +
        '3) Чтобы подтверить изменения на ближайшую неделю, нажми /confirm.\n' +
        '4) если случайно добавил лишний день, его можно удалить при помощи /delete.',
        reply_markup=keyboard
@@ -185,6 +205,19 @@ def get_update_keyboard():
        ),
    )
    return keyboard
+@bot.message_handler(commands=['view'])
+def view(message):
+    us_name = message.chat.username
+    time_table = select_user_time_table(conn, us_name)
+    print(time_table)
+    data_list = []
+    for day_data in time_table:
+        _, start_time, end_time, day, _, _ = day_data
+        data_list.append(f'{day_of_week_dict[day]}: {start_time}-{end_time}')
+    bot.send_message(
+        message.chat.id,
+        'Расписание на следующую неделю:\n' + '\n'.join(data_list),
+    )
 
 @bot.message_handler(content_types=["text"])
 def handle_text(message):
@@ -202,13 +235,5 @@ def handle_text(message):
                              f'Сначала выбери день недели, а потом уже пиши временной промежуток')
     else:
         bot.send_message(message.chat.id, 'не могу прочитать, напиши еще раз:(')
-
-@bot.message_handler(commands=['check'])
-def add_command(message):
-    us_name = message.chat.username
-    bot.send_message(
-        message.chat.id,
-        'Выбери дни на следующей неделе, когда можешь играть:',
-    )
 # Запускаем бота
 bot.polling(none_stop=True, interval=0)
