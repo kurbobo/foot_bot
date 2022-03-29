@@ -110,8 +110,13 @@ def add_possibility(query):
    send_added_result(query)
 
 def return_default_time(query):
+   global global_day_of_week
+   week_day = day_of_week_dict[global_day_of_week[query.message.chat.id]]
    bot.answer_callback_query(query.id)
    update_current_state(query)
+   bot.send_message(
+       query.message.chat.id, f"Запись на {week_day} сохранена.",
+   )
 
 def delete_day(query):
     bot.answer_callback_query(query.id)
