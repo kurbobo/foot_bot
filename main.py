@@ -13,8 +13,8 @@ day_of_week_dict = {'monday': 'понедельник', 'tuesday':'вторни�
 day_of_week = None
 def db_table_val(conn, user_name: str, start_time: str, last_time: str, day_of_week):
     cursor = conn.cursor()
-    cursor.execute('INSERT OR REPLACE INTO time_table (user_name, start_time, last_time, day_of_week) VALUES (?, ?, ?, ?)',
-                   (user_name, start_time, last_time, day_of_week))
+    cursor.execute('INSERT OR REPLACE INTO time_table (user_name, start_time, last_time, day_of_week, current) VALUES (?, ?, ?, ?, ?)',
+                   (user_name, start_time, last_time, day_of_week, True))
     conn.commit()
 def select_previous_times(conn, user_name, day_of_week):
     """
@@ -96,10 +96,10 @@ def send_added_result(query):
    if len(previous_times)==1:
        previous_time = previous_times[0]
        bot.send_message(
-           message.chat.id, f'В какое время ты можешь играть в {day_of_week_dict[day_of_week]}? \n' +
-           'Формат - "10:44-13:30" \n' +
-                            f'Предыдущее время на этот день у тебя было {previous_time[1]}-{previous_time[2]} \
-                            , если устраивает, можешь не менять.',
+           message.chat.id, f'Выбирай время на {day_of_week_dict[day_of_week]}. \n' +
+           'Формат - "10:44-13:30". \n' +
+                            f'Предыдущее время на этот день у тебя было {previous_time[1]}-{previous_time[2]},' +
+                            ' если устраивает, можешь не менять.',
            # reply_markup=get_update_keyboard(),
            # parse_mode='HTML'
        )
