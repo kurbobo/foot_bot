@@ -1,6 +1,8 @@
 import telebot
 import re
 import sqlite3
+import threading
+from time import sleep
 
 conn = sqlite3.connect('db.db', check_same_thread=False)
 with open('token.txt', 'r') as f:
@@ -288,5 +290,23 @@ def handle_text(message):
                                  f'Сначала выбери день недели, а потом уже пиши временной промежуток')
     else:
         bot.send_message(message.chat.id, 'не могу прочитать, напиши еще раз:(')
+
+delay = 60*60*24*7
+
+def make_non_current():
+    while True:
+        sql = f''' UPDATE time_table
+                          SET current = FALSE'''
+        cur = conn.cursor()
+        cur.execute(sql)
+        conn.commit()
+        sleep(delay)
+
+t = threading.Thread(target=make_non_current)
+t.start()
 # Запускаем бота
-bot.polling(none_stop=True, interval=0)
+while True:
+    try:
+        bot.polling(none_stop=True, interval=0)
+    except:
+        sleep(10)
