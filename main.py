@@ -10,7 +10,7 @@ bot = telebot.TeleBot(_token)
 
 day_of_week_dict = {'monday': 'понедельник', 'tuesday':'вторник', 'wednesday': 'среду',
                     'thursday': 'четверг', 'friday': 'пятницу', 'saturday': 'субботу', 'sunday': 'воскресенье'}
-day_of_week = None
+global_day_of_week = {}
 def insert_new_time(conn, user_name: str, start_time: str, last_time: str, day_of_week):
     cursor = conn.cursor()
     cursor.execute('INSERT OR REPLACE INTO time_table (user_name, start_time, last_time, day_of_week, current) VALUES (?, ?, ?, ?, ?)',
@@ -140,6 +140,7 @@ def add_command(message):
 def iq_callback(query):
    data = query.data
    if data.startswith('add-'):
+       global_day_of_week[query.message.chat.id] = str(query.data).split('-')[-1]
        add_possibility(query)
    if data=='return_default_time':
        return_default_time(query)
@@ -163,6 +164,8 @@ def delete_day(query):
     )
 
 def update_current_state(query):
+    global global_day_of_week
+    day_of_week = global_day_of_week[query.message.chat.id]
     user_name = query.message.chat.username
     sql = f''' UPDATE time_table
                   SET current = TRUE
@@ -183,8 +186,8 @@ def set_current_state_to_false(query):
 
 def send_added_result(query):
    message = query.message
-   global day_of_week
-   day_of_week = str(query.data).split('-')[-1]
+   global global_day_of_week
+   day_of_week = global_day_of_week[query.message.chat.id]
    us_name = message.chat.username
    previous_times = select_times(conn, day_of_week, us_name)
    if len(previous_times)==1:
@@ -201,6 +204,7 @@ def send_added_result(query):
            message.chat.id, f'В какое время ты можешь играть в {day_of_week_dict[day_of_week]}? \n' +
                             'формат, например "10:44-13:30" \n',
        )
+   return day_of_week
 
 def get_update_keyboard():
    keyboard = telebot.types.InlineKeyboardMarkup()
@@ -229,7 +233,8 @@ def view(message):
 def handle_text(message):
     pattern = '\d\d:\d\d-\d\d:\d\d'
     if re.fullmatch(pattern, message.text):
-        global day_of_week
+        global global_day_of_week
+        day_of_week = global_day_of_week[message.chat.id]
         us_name = message.from_user.username
         from datetime import datetime
         start_time = re.findall('\d\d:\d\d', message.text)[0]
