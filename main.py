@@ -16,7 +16,7 @@ def insert_new_time(conn, user_name: str, start_time: str, last_time: str, day_o
     cursor.execute('INSERT OR REPLACE INTO time_table (user_name, start_time, last_time, day_of_week, current) VALUES (?, ?, ?, ?, ?)',
                    (user_name, start_time, last_time, day_of_week, True))
     conn.commit()
-def select_previous_times(conn, user_name, day_of_week):
+def select_times(conn, day_of_week, user_name=None, current=False):
     """
     Query all rows in the tasks table
     :param conn: the Connection object
@@ -93,7 +93,7 @@ def send_added_result(query):
    global day_of_week
    day_of_week = str(query.data).split('-')[-1]
    us_name = message.chat.username
-   previous_times = select_previous_times(conn, us_name, day_of_week)
+   previous_times = select_times(conn, day_of_week, us_name)
    if len(previous_times)==1:
        previous_time = previous_times[0]
        bot.send_message(
