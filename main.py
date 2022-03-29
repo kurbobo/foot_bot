@@ -93,6 +93,8 @@ def iq_callback(query):
        add_possibility(query)
    if data=='return_default_time':
        return_default_time(query)
+   if data=='delete':
+       delete_day(query)
 
 def add_possibility(query):
    bot.answer_callback_query(query.id)
@@ -102,10 +104,23 @@ def return_default_time(query):
    bot.answer_callback_query(query.id)
    update_current_state(query)
 
+def delete_day(query):
+    bot.answer_callback_query(query.id)
+    set_current_state_to_false(query)
+
 def update_current_state(query):
     user_name = query.message.chat.username
     sql = f''' UPDATE time_table
-                  SET current = TRUE,
+                  SET current = TRUE
+                  WHERE user_name="{user_name}" and day_of_week="{day_of_week}"'''
+    cur = conn.cursor()
+    cur.execute(sql)
+    conn.commit()
+
+def set_current_state_to_false(query):
+    user_name = query.message.chat.username
+    sql = f''' UPDATE time_table
+                  SET current = FALSE
                   WHERE user_name="{user_name}" and day_of_week="{day_of_week}"'''
     cur = conn.cursor()
     cur.execute(sql)
