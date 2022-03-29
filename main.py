@@ -11,7 +11,7 @@ bot = telebot.TeleBot(_token)
 day_of_week_dict = {'monday': 'понедельник', 'tuesday':'вторник', 'wednesday': 'среду',
                     'thursday': 'четверг', 'friday': 'пятницу', 'saturday': 'субботу', 'sunday': 'воскресенье'}
 day_of_week = None
-def db_table_val(conn, user_name: str, start_time: str, last_time: str, day_of_week):
+def insert_new_time(conn, user_name: str, start_time: str, last_time: str, day_of_week):
     cursor = conn.cursor()
     cursor.execute('INSERT OR REPLACE INTO time_table (user_name, start_time, last_time, day_of_week, current) VALUES (?, ?, ?, ?, ?)',
                    (user_name, start_time, last_time, day_of_week, True))
@@ -129,12 +129,20 @@ def handle_text(message):
         start_time = re.findall('\d\d:\d\d', message.text)[0]
         last_time = re.findall('\d\d:\d\d', message.text)[-1]
         if day_of_week is not None:
-            db_table_val(conn, us_name, start_time, last_time, day_of_week)
+            insert_new_time(conn, us_name, start_time, last_time, day_of_week)
             bot.send_message(message.chat.id, f'Сохранили: в {day_of_week_dict[day_of_week]} ты можешь в с {start_time} до {last_time}')
         else:
             bot.send_message(message.chat.id,
                              f'Сначала выбери день недели, а потом уже пиши временной промежуток')
     else:
         bot.send_message(message.chat.id, 'не могу прочитать, напиши еще раз:(')
+
+@bot.message_handler(commands=['check'])
+def add_command(message):
+    us_name = message.chat.username
+    bot.send_message(
+        message.chat.id,
+        'Выбери дни на следующей неделе, когда можешь играть:',
+    )
 # Запускаем бота
 bot.polling(none_stop=True, interval=0)
