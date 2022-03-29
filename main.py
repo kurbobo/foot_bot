@@ -236,11 +236,13 @@ def handle_text(message):
         last_time = re.findall('\d\d:\d\d', message.text)[-1]
         import time
         try:
-            time.strptime(start_time, '%H:%M')
-            time.strptime(last_time, '%H:%M')
+            start_time_stamp = time.strptime(start_time, '%H:%M')
+            last_time_stamp = time.strptime(last_time, '%H:%M')
+            if last_time_stamp<=start_time_stamp:
+                raise ValueError
         except ValueError:
             bot.send_message(message.chat.id,
-                             f'Некорректный формат времени, попробуй еще раз.')
+                             f'Некорректный формат времени или некорректный временной интервал, попробуй еще раз.')
         else:
             if day_of_week is not None:
                 insert_new_time(conn, us_name, start_time, last_time, day_of_week)
