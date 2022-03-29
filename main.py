@@ -82,8 +82,36 @@ def add_command(message):
 
     bot.send_message(
         message.chat.id,
-        'Выбери дни на следующей неделе, когда можешь играть:',
-        reply_markup=keyboard
+        'Выбери дни на следующей неделе, которые хочешь <b>добавить</b> в расписание:',
+        reply_markup=keyboard,
+        parse_mode='HTML'
+    )
+
+@bot.message_handler(commands=['delete'])
+def add_command(message):
+    keyboard = telebot.types.InlineKeyboardMarkup()
+    keyboard.row(
+        telebot.types.InlineKeyboardButton('понедельник', callback_data='delete-monday'),
+        telebot.types.InlineKeyboardButton('вторник', callback_data='delete-tuesday')
+    )
+    keyboard.row(
+        telebot.types.InlineKeyboardButton('среда', callback_data='delete-wednesday'),
+        telebot.types.InlineKeyboardButton('четверг', callback_data='delete-thursday')
+    )
+    keyboard.row(
+        telebot.types.InlineKeyboardButton('пятница', callback_data='delete-friday'),
+        telebot.types.InlineKeyboardButton('суббота', callback_data='delete-saturday')
+    )
+    keyboard.row(
+        telebot.types.InlineKeyboardButton('воскресенье', callback_data='delete-sunday'),
+        # telebot.types.InlineKeyboardButton('суббота', callback_data='get-EUR')
+    )
+
+    bot.send_message(
+        message.chat.id,
+        'Выбери дни, которые хочешь <b>удалить</b> из расписания:',
+        reply_markup=keyboard,
+        parse_mode='HTML'
     )
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -93,7 +121,7 @@ def iq_callback(query):
        add_possibility(query)
    if data=='return_default_time':
        return_default_time(query)
-   if data=='delete':
+   if data.startswith('delete-'):
        delete_day(query)
 
 def add_possibility(query):
@@ -119,6 +147,7 @@ def update_current_state(query):
 
 def set_current_state_to_false(query):
     user_name = query.message.chat.username
+    day_of_week = str(query.data).split('-')[-1]
     sql = f''' UPDATE time_table
                   SET current = FALSE
                   WHERE user_name="{user_name}" and day_of_week="{day_of_week}"'''
