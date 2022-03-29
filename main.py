@@ -3,6 +3,8 @@ import re
 import sqlite3
 import threading
 from time import sleep
+from tabulate import tabulate
+from pandas import DataFrame
 from database import *
 
 conn = sqlite3.connect('db.db', check_same_thread=False)
@@ -197,8 +199,6 @@ def view(message):
     us_name = message.chat.username
     statistics = get_statistics(conn)
     statistics = [(stat[0][:3].strip(), stat[1]) for stat in statistics]
-    from tabulate import tabulate
-    from pandas import DataFrame
     statistics_df = DataFrame(statistics, columns=['day', 'count'])
     bot.send_message(
         message.chat.id,
@@ -228,20 +228,20 @@ def handle_text(message):
         else:
             if day_of_week is not None:
                 insert_new_time(conn, us_name, start_time, last_time, day_of_week)
-                bot.send_message(message.chat.id, f'Сохранили: в {day_of_week_dict[day_of_week]} ты можешь в с {start_time} до {last_time}')
+                bot.send_message(message.chat.id, f'Сохранили: в {day_of_week_dict[day_of_week]} ты можешь с {start_time} до {last_time}')
             else:
                 bot.send_message(message.chat.id,
                                  f'Сначала выбери день недели, а потом уже пиши временной промежуток')
     else:
         bot.send_message(message.chat.id, 'не могу прочитать, напиши еще раз:(')
 
-
-delay = 60*60*24*7
-t = threading.Thread(target=make_non_current, args=(conn, delay))
-t.start()
-# Запускаем бота
-while True:
-    try:
-        bot.polling(none_stop=True, interval=0)
-    except:
-        sleep(10)
+if __name__=='__main__':
+    delay = 60*60*24*7
+    t = threading.Thread(target=make_non_current, args=(conn, delay))
+    t.start()
+    # Запускаем бота
+    while True:
+        try:
+            bot.polling(none_stop=True, interval=0)
+        except:
+            sleep(10)
