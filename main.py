@@ -244,8 +244,9 @@ def make_non_current(conn):
         cur = conn.cursor()
         cur.execute(sql)
         conn.commit()
-        print('non concurrent')
-        # chat_ids =
+        chat_ids = select_users_ids(conn)
+        for chat in chat_ids:
+            bot.send_message(chat_id=chat[0], text="Пора заполнять данные на новую неделю!")
     schedule.every().sunday.at("14:00").do(lambda: job(conn))
     while True:
         schedule.run_pending()

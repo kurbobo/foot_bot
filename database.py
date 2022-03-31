@@ -46,6 +46,19 @@ def select_user_time_table(conn, user_name, current=True):
 
     return rows
 
+def select_users_ids(conn,):
+    """
+    Query all rows in the tasks table
+    :param conn: the Connection object
+    :return:
+    """
+
+    cursor = conn.cursor()
+    cursor.execute(f'SELECT user_id FROM time_table')
+    rows = cursor.fetchall()
+
+    return rows
+
 def get_statistics(conn):
     """
     Query all rows in the tasks table
