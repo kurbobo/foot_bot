@@ -236,8 +236,7 @@ def handle_text(message):
         bot.send_message(message.chat.id, 'не могу прочитать, напиши еще раз:(')
 
 if __name__=='__main__':
-    delay = 60*60*24*7
-    t = threading.Thread(target=make_non_current, args=(conn, delay))
+    t = threading.Thread(target=make_non_current, args=(conn, ))
     t.start()
     # Запускаем бота
     while True:
