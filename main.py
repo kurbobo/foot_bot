@@ -186,7 +186,6 @@ def view(message):
     time_table = select_user_time_table(conn, us_name)
     data_list = []
     for day_data in time_table:
-        print(day_data)
         _, start_time, end_time, day, _, _ = day_data
         data_list.append(f'{day_of_week_dict[day]}: {start_time}-{end_time} &#9745;')
     bot.send_message(
@@ -196,7 +195,7 @@ def view(message):
     )
 
 @bot.message_handler(commands=['stat'])
-def get_statistics(message):
+def get_statistic(message):
     us_name = message.chat.username
     statistics = get_statistics(conn)
     statistics = [(stat[0][:3].strip(), stat[1]) for stat in statistics]
@@ -205,6 +204,20 @@ def get_statistics(message):
         message.chat.id,
         'Статистика следующая:\n'+tabulate(statistics_df, headers = 'keys', tablefmt = 'github'),
         parse_mode='Markdown'
+    )
+
+@bot.message_handler(commands=['full_stat'])
+def get_full_statistic(message):
+    statistics = get_full_statistics(conn)
+    statistics = [tuple(stat[:4]) for stat in statistics]
+    statistics_df = DataFrame(statistics,
+                              columns=['user_name', 'start_time', 'end_time','day'])
+    statistics_df['time'] = statistics_df.apply(lambda x: x['start_time']+'-'+x['end_time'], axis=1)
+    statistics_df.drop(columns=['start_time', 'end_time'], inplace=True)
+    statistics_df = statistics_df.pivot('user_name', 'day', 'time')
+    bot.send_message(
+        message.chat.id,
+        'Статистика следующая:\n'+str(tabulate(statistics_df, headers = 'keys', tablefmt = 'psql')),
     )
 
 @bot.message_handler(content_types=["text"])

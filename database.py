@@ -75,3 +75,19 @@ def get_statistics(conn):
     rows = cursor.fetchall()
 
     return rows
+
+def get_full_statistics(conn):
+    """
+    Query all rows in the tasks table
+    :param conn: the Connection object
+    :return:
+    """
+
+    cursor = conn.cursor()
+    cursor.execute('''SELECT *
+                    FROM time_table where current=TRUE
+                    '''
+                   )
+    rows = cursor.fetchall()
+
+    return rows
