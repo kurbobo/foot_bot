@@ -196,7 +196,7 @@ def view(message):
     )
 
 @bot.message_handler(commands=['stat'])
-def view(message):
+def get_statistics(message):
     us_name = message.chat.username
     statistics = get_statistics(conn)
     statistics = [(stat[0][:3].strip(), stat[1]) for stat in statistics]
