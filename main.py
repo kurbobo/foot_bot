@@ -186,7 +186,8 @@ def view(message):
     time_table = select_user_time_table(conn, us_name)
     data_list = []
     for day_data in time_table:
-        _, start_time, end_time, day, _ = day_data
+        print(day_data)
+        _, start_time, end_time, day, _, _ = day_data
         data_list.append(f'{day_of_week_dict[day]}: {start_time}-{end_time} &#9745;')
     bot.send_message(
         message.chat.id,
@@ -212,6 +213,7 @@ def handle_text(message):
     if re.fullmatch(pattern, message.text):
         global global_day_of_week
         day_of_week = global_day_of_week[message.chat.id]
+        us_id = message.chat.id
         us_name = message.from_user.username
         from datetime import datetime
         start_time = re.findall('\d\d:\d\d', message.text)[0]
@@ -227,13 +229,27 @@ def handle_text(message):
                              f'Некорректный формат времени или некорректный временной интервал, попробуй еще раз.')
         else:
             if day_of_week is not None:
-                insert_new_time(conn, us_name, start_time, last_time, day_of_week)
+                insert_new_time(conn, us_id, us_name, start_time, last_time, day_of_week)
                 bot.send_message(message.chat.id, f'Сохранили: в {day_of_week_dict[day_of_week]} ты можешь с {start_time} до {last_time}')
             else:
                 bot.send_message(message.chat.id,
                                  f'Сначала выбери день недели, а потом уже пиши временной промежуток')
     else:
         bot.send_message(message.chat.id, 'не могу прочитать, напиши еще раз:(')
+
+def make_non_current(conn):
+    def job(conn):
+        sql = f''' UPDATE time_table
+                          SET current = FALSE'''
+        cur = conn.cursor()
+        cur.execute(sql)
+        conn.commit()
+        print('non concurrent')
+        # chat_ids =
+    schedule.every().sunday.at("14:00").do(lambda: job(conn))
+    while True:
+        schedule.run_pending()
+        sleep(1)
 
 if __name__=='__main__':
     t = threading.Thread(target=make_non_current, args=(conn, ))

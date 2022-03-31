@@ -1,10 +1,10 @@
 from time import sleep
 import schedule
 
-def insert_new_time(conn, user_name: str, start_time: str, last_time: str, day_of_week):
+def insert_new_time(conn, user_id: str, user_name: str, start_time: str, last_time: str, day_of_week):
     cursor = conn.cursor()
-    cursor.execute('INSERT OR REPLACE INTO time_table (user_name, start_time, last_time, day_of_week, current) VALUES (?, ?, ?, ?, ?)',
-                   (user_name, start_time, last_time, day_of_week, True))
+    cursor.execute('INSERT OR REPLACE INTO time_table (user_id, user_name, start_time, last_time, day_of_week, current) VALUES (?, ?, ?, ?, ?, ?)',
+                   (user_id, user_name, start_time, last_time, day_of_week, True))
     conn.commit()
 def select_times(conn, day_of_week, user_name=None, current=False):
     """
@@ -62,16 +62,3 @@ def get_statistics(conn):
     rows = cursor.fetchall()
 
     return rows
-
-def make_non_current(conn):
-    def job(conn):
-        sql = f''' UPDATE time_table
-                          SET current = FALSE'''
-        cur = conn.cursor()
-        cur.execute(sql)
-        conn.commit()
-        print('non concurrent')
-    schedule.every().sunday.at("14:00").do(lambda: job(conn))
-    while True:
-        schedule.run_pending()
-        sleep(1)
