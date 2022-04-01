@@ -266,24 +266,36 @@ def handle_text(message):
     else:
         bot.send_message(message.chat.id, 'не могу прочитать, напиши еще раз:(')
 
-def make_non_current(conn):
-    def job(conn):
+def notifications(conn):
+    def make_non_current(conn):
         sql = f''' UPDATE time_table
                           SET current = FALSE'''
         cur = conn.cursor()
         cur.execute(sql)
         conn.commit()
-        chat_ids = select_users_ids(conn)
+        chat_ids = set(select_users_ids(conn))
         for chat in chat_ids:
-            #todo fix case of deleted user with exception
-            bot.send_message(chat_id=chat[0], text="Пора заполнять данные на новую неделю!")
-    schedule.every().sunday.at("14:00").do(lambda: job(conn))
+            try:
+                bot.send_message(chat_id=chat[0], text="Пора заполнять данные на новую неделю!")
+            except telebot.apihelper.ApiTelegramException:
+                continue
+
+    def ping_users(conn):
+        chat_ids = set(select_users_ids(conn))
+        for chat in chat_ids:
+            try:
+                bot.send_message(chat_id=chat[0], text="Напоминаю про заполнение таблички на новую неделю!")
+            except telebot.apihelper.ApiTelegramException:
+                continue
+    schedule.every().friday.at("19:00").do(lambda: make_non_current(conn))
+    schedule.every().saturday.at("13:00").do(lambda: ping_users(conn))
+    schedule.every().sunday.at("13:00").do(lambda: ping_users(conn))
     while True:
         schedule.run_pending()
         sleep(1)
 
 if __name__=='__main__':
-    t = threading.Thread(target=make_non_current, args=(conn, ))
+    t = threading.Thread(target=notifications, args=(conn, ))
     t.start()
     # Запускаем бота
     while True:
