@@ -3,9 +3,12 @@ import re
 import sqlite3
 import threading
 from time import sleep
+from random import randint
 from tabulate import tabulate
 from pandas import DataFrame
 from database import *
+from os import remove
+import dataframe_image as dfi
 
 conn = sqlite3.connect('db.db', check_same_thread=False)
 with open('token.txt', 'r') as f:
@@ -215,10 +218,16 @@ def get_full_statistic(message):
     statistics_df['time'] = statistics_df.apply(lambda x: x['start_time']+'-'+x['end_time'], axis=1)
     statistics_df.drop(columns=['start_time', 'end_time'], inplace=True)
     statistics_df = statistics_df.pivot('user_name', 'day', 'time')
-    bot.send_message(
-        message.chat.id,
-        'Статистика следующая:\n'+str(tabulate(statistics_df, headers = 'keys', tablefmt = 'psql')),
-    )
+    statistics_df.fillna('-', inplace=True)
+    filename = f'df_{randint(0, 1000)}.png'
+    statistics_df = statistics_df.style.set_table_styles([{'selector': '',
+                                'props': [('border',
+                                           '3px solid green')]}])
+    statistics_df = statistics_df.set_properties(
+        **{'text-align': 'center', 'border-color': 'green', 'border-width': 'thin', 'border-style': 'solid'})
+    dfi.export(statistics_df, filename)
+    bot.send_photo(message.chat.id, open(filename, 'rb'))
+    remove(filename + ".png")
 
 @bot.message_handler(content_types=["text"])
 def handle_text(message):
