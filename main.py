@@ -196,11 +196,18 @@ def view(message):
     for day_data in time_table:
         _, start_time, end_time, day, _, _ = day_data
         data_list.append(f'{day_of_week_dict[day]}: {start_time}-{end_time} &#9745;')
-    bot.send_message(
-        message.chat.id,
-        'Твое свободное время для футбольчика на следующую неделю:\n' + '\n'.join(data_list),
-        parse_mode='HTML'
-    )
+    if len(data_list)>0:
+        bot.send_message(
+            message.chat.id,
+            'Твое свободное время для футбольчика на следующую неделю:\n' + '\n'.join(data_list),
+            parse_mode='HTML'
+        )
+    else:
+        bot.send_message(
+            message.chat.id,
+            'На следующую неделю у тебя пока нет записей, добавь актуальные времена при помощи команды /add.',
+            parse_mode='HTML'
+        )
 
 @bot.message_handler(commands=['stat'])
 def get_statistic(message):
