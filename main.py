@@ -9,6 +9,8 @@ from pandas import DataFrame
 from database import *
 from os import remove
 import dataframe_image as dfi
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 conn = sqlite3.connect('db.db', check_same_thread=False)
 with open('token.txt', 'r') as f:
