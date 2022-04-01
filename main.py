@@ -201,13 +201,18 @@ def view(message):
 def get_statistic(message):
     us_name = message.chat.username
     statistics = get_statistics(conn)
-    statistics = [(stat[0][:3].strip(), stat[1]) for stat in statistics]
+    statistics = [(stat[0].strip(), stat[1]) for stat in statistics]
     statistics_df = DataFrame(statistics, columns=['day', 'count'])
-    bot.send_message(
-        message.chat.id,
-        'Статистика следующая:\n'+tabulate(statistics_df, headers = 'keys', tablefmt = 'github'),
-        parse_mode='Markdown'
-    )
+    statistics_df = statistics_df.set_index('day')
+    filename = f'stat_{randint(0, 1000)}.png'
+    statistics_df = statistics_df.style.set_table_styles([{'selector': '',
+                                                           'props': [('border',
+                                                                      '3px solid green')]}])
+    statistics_df = statistics_df.set_properties(
+        **{'text-align': 'center', 'border-color': 'green', 'border-width': 'thin', 'border-style': 'solid'})
+    dfi.export(statistics_df, filename)
+    bot.send_photo(message.chat.id, open(filename, 'rb'))
+    remove(filename)
 
 @bot.message_handler(commands=['full_stat'])
 def get_full_statistic(message):
@@ -219,7 +224,7 @@ def get_full_statistic(message):
     statistics_df.drop(columns=['start_time', 'end_time'], inplace=True)
     statistics_df = statistics_df.pivot('user_name', 'day', 'time')
     statistics_df.fillna('-', inplace=True)
-    filename = f'df_{randint(0, 1000)}.png'
+    filename = f'full_stat_{randint(0, 1000)}.png'
     statistics_df = statistics_df.style.set_table_styles([{'selector': '',
                                 'props': [('border',
                                            '3px solid green')]}])
@@ -227,7 +232,7 @@ def get_full_statistic(message):
         **{'text-align': 'center', 'border-color': 'green', 'border-width': 'thin', 'border-style': 'solid'})
     dfi.export(statistics_df, filename)
     bot.send_photo(message.chat.id, open(filename, 'rb'))
-    remove(filename + ".png")
+    remove(filename)
 
 @bot.message_handler(content_types=["text"])
 def handle_text(message):
