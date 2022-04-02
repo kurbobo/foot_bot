@@ -192,14 +192,18 @@ def get_update_keyboard():
 def view(message):
     us_name = message.chat.username
     time_table = select_user_time_table(conn, us_name)
-    data_list = []
+    data_dict = {}
     for day_data in time_table:
         _, start_time, end_time, day, _, _ = day_data
-        data_list.append(f'{day_of_week_dict[day]}: {start_time}-{end_time} &#9745;')
-    if len(data_list)>0:
+        data_dict[day] = f'{day_of_week_dict[day]}: {start_time}-{end_time} &#9745;'
+    data_str = ''
+    for day in weekdays:
+        if day in data_dict:
+            data_str+=data_dict[day] + '\n'
+    if len(data_dict)>0:
         bot.send_message(
             message.chat.id,
-            'Твое свободное время для футбольчика на следующую неделю:\n' + '\n'.join(data_list),
+            'Твое свободное время для футбольчика на следующую неделю:\n' + data_str,
             parse_mode='HTML'
         )
     else:
