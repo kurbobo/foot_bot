@@ -20,6 +20,7 @@ bot = telebot.TeleBot(_token)
 day_of_week_dict = {'monday': 'понедельник', 'tuesday':'вторник', 'wednesday': 'среду',
                     'thursday': 'четверг', 'friday': 'пятницу', 'saturday': 'субботу', 'sunday': 'воскресенье'}
 global_day_of_week = {}
+weekdays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
 # Функция, обрабатывающая команду /start
 @bot.message_handler(commands=["start"])
 def start(m, res=False):
@@ -212,9 +213,13 @@ def view(message):
 def get_statistic(message):
     us_name = message.chat.username
     statistics = get_statistics(conn)
-    statistics = [(stat[0].strip(), stat[1]) for stat in statistics]
-    statistics_df = DataFrame(statistics, columns=['day', 'count'])
-    statistics_df = statistics_df.set_index('day')
+    statistics = {stat[0].strip(): stat[1] for stat in statistics}
+    for day in weekdays:
+        if day not in statistics:
+            statistics[day] = 0
+    statistics_df = DataFrame.from_dict(statistics, orient='index', columns=['count'])
+    statistics_df.index = weekdays
+
     filename = f'stat_{randint(0, 1000)}.png'
     statistics_df = statistics_df.style.set_table_styles([{'selector': '',
                                                            'props': [('border',
