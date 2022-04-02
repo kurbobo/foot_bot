@@ -235,9 +235,7 @@ def get_full_statistic(message):
     statistics_df.drop(columns=['start_time', 'end_time'], inplace=True)
     statistics_df = statistics_df.pivot('user_name', 'day', 'time')
     statistics_df.fillna('-', inplace=True)
-    # print(df.columns.tolist())
-    # statistics_df = statistics_df[['monday', 'tuesday', 'wednesday','thursday', 'friday', 'saturday', 'sunday']]
-    # print(statistics_df.keys())
+    statistics_df = statistics_df[['monday', 'tuesday', 'wednesday','thursday', 'friday', 'saturday', 'sunday']]
     filename = f'full_stat_{randint(0, 1000)}.png'
     statistics_df = statistics_df.style.set_table_styles([{'selector': '',
                                 'props': [('border',
