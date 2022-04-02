@@ -199,7 +199,7 @@ def view(message):
     data_str = ''
     for day in weekdays:
         if day in data_dict:
-            data_str+=data_dict[day] + '\n'
+            data_str = '\n'.join([data_str, data_dict[day]])
     if len(data_dict)>0:
         bot.send_message(
             message.chat.id,
